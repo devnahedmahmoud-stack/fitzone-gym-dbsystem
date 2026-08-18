@@ -203,7 +203,7 @@ go
 --rule: check the class isn't already at capacity BEFORE inserting the booking, and do the whole
 --thing as a single transaction so a failed capacity check never leaves a half-done booking behind.
 
-alter Procedure usp_ClassBook 
+Create Procedure usp_ClassBook 
 @BookStatus Nvarchar(150),@MemberID int,@ClassID int
 
 As
