@@ -227,9 +227,12 @@ Begin Try
 	Commit Transaction
 End Try
 Begin Catch
-	RollBack Transaction	
-	Print 'Error Line #'+Cast(ERROR_LINE() as varchar(10))+
-	' Error Message: '+ERROR_MESSAGE();
+	IF(@@TRANCOUNT>0)
+	Begin
+		RollBack Transaction	
+		Print 'Error Line #'+Cast(ERROR_LINE() as varchar(10))+
+		' Error Message: '+ERROR_MESSAGE();
+	End
 End catch
 go
 
