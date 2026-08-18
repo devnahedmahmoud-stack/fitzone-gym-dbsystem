@@ -57,7 +57,8 @@ BookID Int Not Null,
 Constraint PK_Payments Primary Key (ID),
 Constraint FK_Payments_Bookings Foreign Key (BookID)
 References Bookings(ID),
-Constraint CK_Payments_Amount Check (Amount>0)
+Constraint CK_Payments_Amount Check (Amount>0),
+Constraint CK_Payments_Method Check (Method in ('Cash','Card','Transfer'))
 )
 go
 --===========================================================================
@@ -136,7 +137,7 @@ Delete From Bookings Where ID=5 --Cancelled
 
 --========================================================================================================
 --4. Reports (JOINs + aggregation)
---A report joining 3 or more tables — e.g. every booking showing the member's name, the class
+--A report joining 3 or more tables   e.g. every booking showing the member's name, the class
 --name, and the trainer who runs it.
 
 Select m.MemberName As [Member Name],
@@ -153,7 +154,7 @@ on c.TrainerID =t.ID
 go
 
 
---A GROUP BY report with a HAVING clause — e.g. classes with more than a certain number of
+--A GROUP BY report with a HAVING clause   e.g. classes with more than a certain number of
 --confirmed bookings.
 Select Count(b.ID) as [Class Confirmed Bookings Count],c.ClassName as [Class Name]
 From Bookings b
@@ -180,7 +181,7 @@ go
 
 --================================================================================================================
 --6. A view
---Create a read-only view — something like ActiveMembersSummary — that gives a quick snapshot of
+--Create a read-only view   something like ActiveMembersSummary   that gives a quick snapshot of
 --each member and their total number of confirmed bookings, without anyone needing to know the
 --underlying JOIN to get it.
 
@@ -198,7 +199,7 @@ go
 
 --====================================================================================================================
 --7. A stored procedure, wrapped in a transaction
---Write a procedure that books a member into a class — but it has to actually enforce the business
+--Write a procedure that books a member into a class   but it has to actually enforce the business
 --rule: check the class isn't already at capacity BEFORE inserting the booking, and do the whole
 --thing as a single transaction so a failed capacity check never leaves a half-done booking behind.
 
@@ -206,7 +207,7 @@ Create Procedure usp_ClassBook
 @BookStatus Nvarchar(150),@MemberID int,@ClassID int
 
 As
-Begin
+Begin Try
 	Declare @MaxCapacity int
 	Select @MaxCapacity=MaxCapacity From Classes c where c.ID=@ClassID
 
@@ -214,7 +215,7 @@ Begin
 
 	if ((Select Count(b.ID) As [Class Total Bookings]
 	From Bookings b 
-	Where b.ClassID=@ClassID)>=@MaxCapacity)
+	Where b.ClassID=@ClassID and b.BookStatus='Confirmed')>=@MaxCapacity)
 	Begin
 		RollBack Transaction
 		Print 'Class Capacity reached to its maximum capacity :'+Cast(@MaxCapacity as varchar(3))
@@ -224,8 +225,12 @@ Begin
 	Insert Into  Bookings (BookStatus,MemberID,ClassID)
 	Values (@BookStatus,@MemberID,@ClassID)
 	Commit Transaction
-
-End
+End Try
+Begin Catch
+	RollBack Transaction	
+	Print 'Error Line #'+Cast(ERROR_LINE() as varchar(10))+
+	' Error Message: '+ERROR_MESSAGE();
+End catch
 go
 
 Exec usp_ClassBook 
@@ -277,10 +282,10 @@ Exec usp_ClassBook
 go
 
 --======================================================================================================
---Bonus (optional — hard, not impossible)
---Find the member(s) who have booked at least one class with every single trainer at the gym —
+--Bonus (optional   hard, not impossible)
+--Find the member(s) who have booked at least one class with every single trainer at the gym  
 --not just a lot of trainers, literally all of them. This is a genuinely tricky query. You already
---have everything you need from Session 08's NOT EXISTS pattern — think about it as "find a member
+--have everything you need from Session 08's NOT EXISTS pattern   think about it as "find a member
 --where there is NOT a trainer they've never booked."
 
 Select m.MemberName 
