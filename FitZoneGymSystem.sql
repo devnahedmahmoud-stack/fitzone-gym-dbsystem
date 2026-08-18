@@ -203,7 +203,7 @@ go
 --rule: check the class isn't already at capacity BEFORE inserting the booking, and do the whole
 --thing as a single transaction so a failed capacity check never leaves a half-done booking behind.
 
-Create Procedure usp_ClassBook 
+alter Procedure usp_ClassBook 
 @BookStatus Nvarchar(150),@MemberID int,@ClassID int
 
 As
@@ -229,10 +229,10 @@ End Try
 Begin Catch
 	IF(@@TRANCOUNT>0)
 	Begin
-		RollBack Transaction	
-		Print 'Error Line #'+Cast(ERROR_LINE() as varchar(10))+
-		' Error Message: '+ERROR_MESSAGE();
+		RollBack Transaction			
 	End
+	Print 'Error Line #'+Cast(ERROR_LINE() as varchar(10))+
+	' Error Message: '+ERROR_MESSAGE();
 End catch
 go
 
